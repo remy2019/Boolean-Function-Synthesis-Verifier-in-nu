@@ -42,11 +42,25 @@ dune exec ./main.exe | save -f result.txt
 cat result.txt
 
 print $"Test cases requested: ($env.cases)"
-print $"Test cases received: (cat result.txt | lines | length)"
+let recv = (cat result.txt | lines | length)
+print $"Test cases received: ($recv)"
+if ($env.cases != $recv) {
+  print "Something went wrong. Check your implementation"
+  exit 1
+}
 
-# let result = do $verify_sat $env.cases $data (cat result.txt | lines)
-# let success = $result | filter { |e| $e == true} | length
-# let fail = $result | filter { |e| $e == false} | length
+print ""
+let zipped = $data | zip (cat result.txt | lines)
+let effective = $zipped | filter { |e|
+  ((($e | get 1) != "No solution") and (($e | get 1) != "()"))
+}
+print $"No solution / empty clause: (($zipped | length) - ($effective | length))"
+print $"Running verification over remaining ($effective | length) cases..."
+let result = verify $effective
+print $result
+let success = $result | filter { |e| $e == true} | length
+let fail = $result | filter { |e| $e == false} | length
 
-# print $"Verified: ($success)"
-# print $"Fail: ($fail)"
+print ""
+print $"Verified: ($success)"
+print $"Fail: ($fail)"

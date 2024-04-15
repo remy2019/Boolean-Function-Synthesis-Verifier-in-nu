@@ -74,6 +74,50 @@ def create_main_ml [n: int] {
   [$b $c $d] | str join (char newline)
 }
 
+def verify [data] {
+  $data | each { |e|
+    let pos = $e | get 0 | get 0
+    let neg = $e | get 0 | get 1
+    let pos_len = $pos | length
+    let neg_len = $neg | length
+    let result_vals = (1..($e | get 0 | length)) | enumerate | each { |e|
+      if ($e.index < $pos_len ) { true } else { false }
+    }
+    let pos_neg = $pos | append $neg
+
+    let dnf = $e | get 1 | str replace -a '\/' '|' | str replace -a '/\' '&' | str replace -a 'x' '' 
+    let clauses = $dnf | parse --regex '\(([^)]+)\)' | get capture0
+
+    let for_all_assignments = ($pos_neg | zip $result_vals) | each { |e|
+      let raw_assignment = $e | get 0 | get assignments | split chars
+      let answer_value = $e | get 1
+      
+      let big_ands = $clauses | each { |clause|
+        let lits = $clause | parse --regex '(\!?\d+)' | get capture0
+        let negation = $lits | each { |i| $i | str contains '!'}
+        let lits_zero_index = $lits | each { |i| ($i | str replace '!' '' | into int) - 1} 
+      
+        let before_neg = $lits_zero_index | each { |i|
+          if ($raw_assignment | get $i) == '0' {false} else {true}
+        }
+        let zipped_with_neg = $before_neg | zip $negation
+        let after_neg = $zipped_with_neg | each { |i|
+          let res = ($i | get 0)
+          if ($i | get 1) {(not ($res))} else {$res}
+        }
+        let big_and = $after_neg | reduce { |it, acc|
+          $it and $acc
+        }
+        $big_and
+      }
+
+      let big_or = $big_ands | reduce { |it, acc| $it or $acc}
+      $answer_value == $big_or
+    }
+    $for_all_assignments | reduce { |it, acc| $it and $acc}
+  }
+}
+
 def test [] {
   let cases = 10
   let var_min = 2
