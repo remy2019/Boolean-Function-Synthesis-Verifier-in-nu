@@ -1,0 +1,14 @@
+hw2_path = "Input absolute address"
+
+files = [
+  "Makefile",
+  "learn.ml",
+  "dune",
+  "dune-project",
+  "smt.ml",
+  "utils.ml",
+]
+
+cases = 10
+var_min = 2
+var_max = 10
